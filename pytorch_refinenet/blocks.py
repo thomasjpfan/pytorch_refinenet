@@ -92,7 +92,7 @@ class ChainedResidualPool(nn.Module):
 
 class RefineNetBlock(nn.Module):
 
-    def __init__(self, path_shape, layer_shape, features=256):
+    def __init__(self, features, path_shape, layer_shape):
         super().__init__()
 
         path_feats, path_size = path_shape
@@ -103,8 +103,6 @@ class RefineNetBlock(nn.Module):
             ResidualConvUnit(path_feats)
         )
         self.rcu_layer = nn.Sequential(
-            nn.Conv2d(layer_feats, features, kernel_size=3,
-                      padding=1, stride=1, bias=False),
             ResidualConvUnit(features),
             ResidualConvUnit(features)
         )
