@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.6"
+install:
+  - pip install http://download.pytorch.org/whl/cu75/torch-0.2.0.post3-cp36-cp36m-manylinux1_x86_64.whl
+  - pip install torchvision pytest pytest-cov coveralls
+  - pip install -e .
+script:
+  - pytest tests --cov=pytorch_refinenet
+after_success:
+  - coveralls
