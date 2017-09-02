@@ -24,27 +24,38 @@ class ResidualConvUnit(nn.Module):
 
 class MultiResolutionFusion(nn.Module):
 
-    def __init__(self, out_features, in_shape_1, in_shape_2):
+    def __init__(self, out_feats, *shapes):
         super().__init__()
 
-        in_feat_1, in_size_1 = in_shape_1
-        in_feat_2, in_size_2 = in_shape_2
+        _, max_size = max(shapes, key=lambda x: x[1])
 
-        if 2 * in_size_1 != in_size_2:
-            raise ValueError("2 * in_feat_1 must equal in_size_2")
+        for i, shape in enumerate(shapes):
+            feat, size = shape
+            if max_size % size != 0:
+                raise ValueError(f"max_size not divisble by shape {i}")
 
-        self.conv1 = nn.Conv2d(
-            in_feat_1, out_features, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv2 = nn.Conv2d(
-            in_feat_2, out_features, kernel_size=3, stride=1, padding=1, bias=False)
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
+            scale_factor = max_size // size
+            if scale_factor != 1:
+                self.add_module(f"resolve{i}", nn.Sequential(
+                    nn.Conv2d(feat, out_feats, kernel_size=3,
+                              stride=1, padding=1, bias=False),
+                    nn.Upsample(scale_factor=scale_factor, mode='bilinear')
+                ))
+            else:
+                self.add_module(
+                    f"resolve{i}",
+                    nn.Conv2d(feat, out_feats, kernel_size=3,
+                              stride=1, padding=1, bias=False)
+                )
 
-    def forward(self, x1, x2):
-        x1 = self.conv1(x1)
-        x1 = self.upsample(x1)
-        x2 = self.conv2(x2)
+    def forward(self, *xs):
 
-        return x1 + x2
+        output = self.resolve0(xs[0])
+
+        for i, x in enumerate(xs[1:], 1):
+            output += self.__getattr__(f"resolve{i}")(x)
+
+        return output
 
 
 class ChainedResidualPool(nn.Module):
@@ -92,7 +103,8 @@ class RefineNetBlock(nn.Module):
             ResidualConvUnit(path_feats)
         )
         self.rcu_layer = nn.Sequential(
-            nn.Conv2d(layer_feats, features, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(layer_feats, features, kernel_size=3,
+                      padding=1, stride=1, bias=False),
             ResidualConvUnit(features),
             ResidualConvUnit(features)
         )
@@ -116,7 +128,8 @@ class RefineNetBottomBlock(nn.Module):
         super().__init__()
 
         self.rcu = nn.Sequential(
-            nn.Conv2d(layer_feats, features, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(layer_feats, features, kernel_size=3,
+                      padding=1, stride=1, bias=False),
             ResidualConvUnit(features),
             ResidualConvUnit(features)
         )
