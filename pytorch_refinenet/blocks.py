@@ -92,49 +92,32 @@ class ChainedResidualPool(nn.Module):
 
 class RefineNetBlock(nn.Module):
 
-    def __init__(self, features, path_shape, layer_shape):
+    def __init__(self, features, *shapes):
         super().__init__()
 
-        path_feats, path_size = path_shape
-        layer_feats, layer_size = layer_shape
+        for i, shape in enumerate(shapes):
+            feats = shape[0]
+            self.add_module(f"rcu{i}", nn.Sequential(
+                ResidualConvUnit(feats),
+                ResidualConvUnit(feats)
+            ))
 
-        self.rcu_path = nn.Sequential(
-            ResidualConvUnit(path_feats),
-            ResidualConvUnit(path_feats)
-        )
-        self.rcu_layer = nn.Sequential(
-            ResidualConvUnit(features),
-            ResidualConvUnit(features)
-        )
+        if len(shapes) != 1:
+            self.mrf = MultiResolutionFusion(features, *shapes)
+        else:
+            self.mrf = None
 
-        self.mrf = MultiResolutionFusion(features, path_shape, (features, layer_size))
         self.crp = ChainedResidualPool(features)
         self.output_conv = ResidualConvUnit(features)
 
-    def forward(self, x_path, x_layer):
-        x_layer = self.rcu_layer(x_layer)
-        x_path = self.rcu_path(x_path)
+    def forward(self, *xs):
+        for i, x in enumerate(xs):
+            x = self.__getattr__(f"rcu{i}")(x)
 
-        out = self.mrf(x_path, x_layer)
+        if self.mrf is not None:
+            out = self.mrf(*xs)
+        else:
+            out = xs[0]
+
         out = self.crp(out)
         return self.output_conv(out)
-
-
-class RefineNetBottomBlock(nn.Module):
-
-    def __init__(self, layer_feats, features=512):
-        super().__init__()
-
-        self.rcu = nn.Sequential(
-            nn.Conv2d(layer_feats, features, kernel_size=3,
-                      padding=1, stride=1, bias=False),
-            ResidualConvUnit(features),
-            ResidualConvUnit(features)
-        )
-        self.crp = ChainedResidualPool(features)
-        self.output_conv = ResidualConvUnit(features)
-
-    def forward(self, x):
-        x = self.rcu(x)
-        x = self.crp(x)
-        return self.output_conv(x)

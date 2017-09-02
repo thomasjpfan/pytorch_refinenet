@@ -2,7 +2,7 @@ import torch.nn as nn
 import torchvision.models as models
 
 from .blocks import (
-    RefineNetBlock, RefineNetBottomBlock,
+    RefineNetBlock,
     ResidualConvUnit
 )
 
@@ -36,19 +36,21 @@ class RefineNet(nn.Module):
         self.layer1_rn = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False)
         self.layer2_rn = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False)
         self.layer3_rn = nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False)
+        self.layer4_rn = nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1, bias=False)
 
-        self.refinenet4 = RefineNetBottomBlock(2048, features=512)
+        self.refinenet4 = RefineNetBlock(
+            512, (512, input_size // 32))
         self.refinenet3 = RefineNetBlock(
-            256, (512, input_size // 32), (1024, input_size // 16))
+            256, (512, input_size // 32), (256, input_size // 16))
         self.refinenet2 = RefineNetBlock(
-            256, (256, input_size // 16), (512, input_size // 8))
+            256, (256, input_size // 16), (256, input_size // 8))
         self.refinenet1 = RefineNetBlock(
             256, (256, input_size // 8), (256, input_size // 4))
 
         self.output_conv = nn.Sequential(
             ResidualConvUnit(256),
             ResidualConvUnit(256),
-            nn.Conv2d(256, num_classes, kernel_size=1)
+            nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
         )
 
     def forward(self, x):
@@ -61,8 +63,9 @@ class RefineNet(nn.Module):
         layer_1_rn = self.layer1_rn(layer_1)
         layer_2_rn = self.layer2_rn(layer_2)
         layer_3_rn = self.layer3_rn(layer_3)
+        layer_4_rn = self.layer4_rn(layer_4)
 
-        path_4 = self.refinenet4(layer_4)
+        path_4 = self.refinenet4(layer_4_rn)
         path_3 = self.refinenet3(path_4, layer_3_rn)
         path_2 = self.refinenet2(path_3, layer_2_rn)
         path_1 = self.refinenet1(path_2, layer_1_rn)
