@@ -24,11 +24,12 @@ class RefineNet(nn.Module):
                  num_classes=1,
                  features=256,
                  resnet_factory=models.resnet101,
-                 pretrained=True):
+                 pretrained=True,
+                 freeze_resnet=True):
         ...
 ```
 The `input_shape` is a tuple of`(channels, size)` which denotes the number of channels in the
-input image and the input width/height. The input size is assumed to be a square image/patch. For
+input image and the input width/height. For an input to flow cleanly through the resnet layers, the input size should be divisible by 32. The input size is assumed to be a square image/patch. For
 example the `RefineNet` can be defined to intake 3x224x224 images:
 
 ```python

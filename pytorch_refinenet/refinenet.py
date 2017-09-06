@@ -11,9 +11,27 @@ class RefineNet(nn.Module):
 
     def __init__(self, input_shape,
                  num_classes=1,
-                 resnet_factory=models.resnet101,
                  features=256,
-                 pretrained=True):
+                 resnet_factory=models.resnet101,
+                 pretrained=True,
+                 freeze_resnet=True):
+        """Multi-path refinenet for image segmentation
+
+        Args:
+            input_shape ((int, int)): (channel, size) assumes input has
+                equal height and width
+            num_classes (int, optional): number of classes
+            features (int, optional): number of features in refinenet
+            resnet_factory (func, optional): A Resnet model from torchvision.
+                Default: models.resnet101
+            pretrained (bool, optional): Use pretrained version of resnet
+                Default: True
+            freeze_resnet (bool, optional): Freeze resnet model
+                Default: True
+
+        Raises:
+            ValueError: size of input_shape not divisible by 32
+        """
         super().__init__()
 
         input_channel, input_size = input_shape
@@ -34,6 +52,12 @@ class RefineNet(nn.Module):
         self.layer2 = resnet.layer2
         self.layer3 = resnet.layer3
         self.layer4 = resnet.layer4
+
+        if freeze_resnet:
+            layers = [self.layer1, self.layer2, self.layer3, self.layer4]
+            for layer in layers:
+                for param in layer.parameters():
+                    param.requires_grad = False
 
         self.layer1_rn = nn.Conv2d(256, features, kernel_size=3, stride=1, padding=1, bias=False)
         self.layer2_rn = nn.Conv2d(512, features, kernel_size=3, stride=1, padding=1, bias=False)
