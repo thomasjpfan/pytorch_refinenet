@@ -59,10 +59,14 @@ class RefineNet(nn.Module):
                 for param in layer.parameters():
                     param.requires_grad = False
 
-        self.layer1_rn = nn.Conv2d(256, features, kernel_size=3, stride=1, padding=1, bias=False)
-        self.layer2_rn = nn.Conv2d(512, features, kernel_size=3, stride=1, padding=1, bias=False)
-        self.layer3_rn = nn.Conv2d(1024, features, kernel_size=3, stride=1, padding=1, bias=False)
-        self.layer4_rn = nn.Conv2d(2048, features, kernel_size=3, stride=1, padding=1, bias=False)
+        self.layer1_rn = nn.Conv2d(
+            256, features, kernel_size=3, stride=1, padding=1, bias=False)
+        self.layer2_rn = nn.Conv2d(
+            512, features, kernel_size=3, stride=1, padding=1, bias=False)
+        self.layer3_rn = nn.Conv2d(
+            1024, features, kernel_size=3, stride=1, padding=1, bias=False)
+        self.layer4_rn = nn.Conv2d(
+            2048, 2*features, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.refinenet4 = RefineNetBlock(
             2*features, (2*features, input_size // 32))
