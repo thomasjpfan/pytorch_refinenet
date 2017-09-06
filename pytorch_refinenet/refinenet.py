@@ -12,10 +12,12 @@ class RefineNet(nn.Module):
     def __init__(self, input_shape,
                  num_classes=1,
                  resnet_factory=models.resnet101,
+                 features=256,
                  pretrained=True):
         super().__init__()
 
         input_channel, input_size = input_shape
+
         if input_size % 32 != 0:
             raise ValueError(f"{input_shape} not divisble by 32")
 
@@ -33,24 +35,24 @@ class RefineNet(nn.Module):
         self.layer3 = resnet.layer3
         self.layer4 = resnet.layer4
 
-        self.layer1_rn = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False)
-        self.layer2_rn = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False)
-        self.layer3_rn = nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False)
-        self.layer4_rn = nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1, bias=False)
+        self.layer1_rn = nn.Conv2d(256, features, kernel_size=3, stride=1, padding=1, bias=False)
+        self.layer2_rn = nn.Conv2d(512, features, kernel_size=3, stride=1, padding=1, bias=False)
+        self.layer3_rn = nn.Conv2d(1024, features, kernel_size=3, stride=1, padding=1, bias=False)
+        self.layer4_rn = nn.Conv2d(2048, features, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.refinenet4 = RefineNetBlock(
-            512, (512, input_size // 32))
+            2*features, (2*features, input_size // 32))
         self.refinenet3 = RefineNetBlock(
-            256, (512, input_size // 32), (256, input_size // 16))
+            features, (2*features, input_size // 32), (features, input_size // 16))
         self.refinenet2 = RefineNetBlock(
-            256, (256, input_size // 16), (256, input_size // 8))
+            features, (features, input_size // 16), (features, input_size // 8))
         self.refinenet1 = RefineNetBlock(
-            256, (256, input_size // 8), (256, input_size // 4))
+            features, (features, input_size // 8), (features, input_size // 4))
 
         self.output_conv = nn.Sequential(
-            ResidualConvUnit(256),
-            ResidualConvUnit(256),
-            nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
+            ResidualConvUnit(features),
+            ResidualConvUnit(features),
+            nn.Conv2d(features, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
         )
 
     def forward(self, x):
