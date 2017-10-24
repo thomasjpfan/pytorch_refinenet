@@ -1,1 +1,1 @@
-from .refinenet import RefineNet4Cascade
+from .refinenet import RefineNet4Cascade, RefineNet4CascadePoolingImproved

@@ -3,23 +3,26 @@ import torchvision.models as models
 
 from ..blocks import (
     RefineNetBlock,
-    ResidualConvUnit
+    ResidualConvUnit,
+    RefineNetBlockImprovedPooling
 )
 
 
-class RefineNet4Cascade(nn.Module):
+class BaseRefineNet4Cascade(nn.Module):
 
     def __init__(self, input_shape,
+                 refinenet_block,
                  num_classes=1,
                  features=256,
                  resnet_factory=models.resnet101,
                  pretrained=True,
                  freeze_resnet=True):
-        """Multi-path refinenet for image segmentation
+        """Multi-path 4-Cascaded RefineNet for image segmentation
 
         Args:
             input_shape ((int, int)): (channel, size) assumes input has
                 equal height and width
+            refinenet_block (block): RefineNet Block
             num_classes (int, optional): number of classes
             features (int, optional): number of features in refinenet
             resnet_factory (func, optional): A Resnet model from torchvision.
@@ -66,12 +69,12 @@ class RefineNet4Cascade(nn.Module):
         self.layer3_rn = nn.Conv2d(
             1024, features, kernel_size=3, stride=1, padding=1, bias=False)
         self.layer4_rn = nn.Conv2d(
-            2048, 2*features, kernel_size=3, stride=1, padding=1, bias=False)
+            2048, 2 * features, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.refinenet4 = RefineNetBlock(
-            2*features, (2*features, input_size // 32))
+            2 * features, (2 * features, input_size // 32))
         self.refinenet3 = RefineNetBlock(
-            features, (2*features, input_size // 32), (features, input_size // 16))
+            features, (2 * features, input_size // 32), (features, input_size // 16))
         self.refinenet2 = RefineNetBlock(
             features, (features, input_size // 16), (features, input_size // 8))
         self.refinenet1 = RefineNetBlock(
@@ -101,3 +104,67 @@ class RefineNet4Cascade(nn.Module):
         path_1 = self.refinenet1(path_2, layer_1_rn)
         out = self.output_conv(path_1)
         return out
+
+
+class RefineNet4CascadePoolingImproved(BaseRefineNet4Cascade):
+
+    def __init__(self, input_shape,
+                 num_classes=1,
+                 features=256,
+                 resnet_factory=models.resnet101,
+                 pretrained=True,
+                 freeze_resnet=True):
+        """Multi-path 4-Cascaded RefineNet for image segmentation with improved pooling
+
+        Args:
+            input_shape ((int, int)): (channel, size) assumes input has
+                equal height and width
+            refinenet_block (block): RefineNet Block
+            num_classes (int, optional): number of classes
+            features (int, optional): number of features in refinenet
+            resnet_factory (func, optional): A Resnet model from torchvision.
+                Default: models.resnet101
+            pretrained (bool, optional): Use pretrained version of resnet
+                Default: True
+            freeze_resnet (bool, optional): Freeze resnet model
+                Default: True
+
+        Raises:
+            ValueError: size of input_shape not divisible by 32
+        """
+        super().__init__(input_shape, RefineNetBlockImprovedPooling,
+                         num_classes=num_classes, features=features,
+                         resnet_factory=resnet_factory, pretrained=pretrained,
+                         freeze_resnet=freeze_resnet)
+
+
+class RefineNet4Cascade(BaseRefineNet4Cascade):
+
+    def __init__(self, input_shape,
+                 num_classes=1,
+                 features=256,
+                 resnet_factory=models.resnet101,
+                 pretrained=True,
+                 freeze_resnet=True):
+        """Multi-path 4-Cascaded RefineNet for image segmentation
+
+        Args:
+            input_shape ((int, int)): (channel, size) assumes input has
+                equal height and width
+            refinenet_block (block): RefineNet Block
+            num_classes (int, optional): number of classes
+            features (int, optional): number of features in refinenet
+            resnet_factory (func, optional): A Resnet model from torchvision.
+                Default: models.resnet101
+            pretrained (bool, optional): Use pretrained version of resnet
+                Default: True
+            freeze_resnet (bool, optional): Freeze resnet model
+                Default: True
+
+        Raises:
+            ValueError: size of input_shape not divisible by 32
+        """
+        super().__init__(input_shape, RefineNetBlock,
+                         num_classes=num_classes, features=features,
+                         resnet_factory=resnet_factory, pretrained=pretrained,
+                         freeze_resnet=freeze_resnet)

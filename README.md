@@ -12,12 +12,19 @@ Install PyTorch following instructions on their [website](http://pytorch.org). T
 pip install git+https://github.com/thomasjpfan/pytorch_refinenet.git
 ```
 
+## Implemented versions
+
+- Multi-path 4-Cascaded RefineNet: `RefineNet4Cascade`
+- Multi-path 4-Cascaded RefineNet With Improved Pooling: `RefineNet4CascadePoolingImproved`
+
+There are diagrams of these two versions in the author's github [repo](https://github.com/guosheng/refinenet/tree/master/net_graphs). The improved pooling version adds an additional pooling/convolution layer and flips the order of the pooling/convolution layers in the *Chained Residual Pooling* block.
+
 ## Usage
 
 This implementation of the Multipath RefineNet has the following initialization:
 
 ```python
-class RefineNet4Cascaded(nn.Module):
+class RefineNet4Cascade(nn.Module):
 
     def __init__(self,
                  input_shape,
@@ -30,13 +37,13 @@ class RefineNet4Cascaded(nn.Module):
 ```
 The `input_shape` is a tuple of`(channels, size)` which denotes the number of channels in the
 input image and the input width/height. For an input to flow cleanly through the resnet layers, the input size should be divisible by 32. The input size is assumed to be a square image/patch. For
-example the `RefineNet4Cascaded` can be defined to intake 3x224x224 images:
+example the `RefineNet4Cascade` can be defined to intake 3x224x224 images:
 
 ```python
 import torch
 from torch.autograd import Variable
 
-net = RefineNet4Cascaded((3, 224), num_classes=10)
+net = RefineNet4Cascade((3, 224), num_classes=10)
 x_var = Variable(torch.randn(1, 3, 224, 224))
 y = net(x_var)
 y.size()

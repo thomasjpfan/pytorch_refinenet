@@ -64,51 +64,68 @@ class ChainedResidualPool(nn.Module):
         super().__init__()
 
         self.relu = nn.ReLU(inplace=True)
-        self.block1 = nn.Sequential(
-            nn.MaxPool2d(kernel_size=5, stride=1, padding=2),
-            nn.Conv2d(feats, feats, kernel_size=3, stride=1, padding=1, bias=False)
-        )
-        self.block2 = nn.Sequential(
-            nn.MaxPool2d(kernel_size=5, stride=1, padding=2),
-            nn.Conv2d(feats, feats, kernel_size=3, stride=1, padding=1, bias=False)
-        )
-        self.block3 = nn.Sequential(
-            nn.MaxPool2d(kernel_size=5, stride=1, padding=2),
-            nn.Conv2d(feats, feats, kernel_size=3, stride=1, padding=1, bias=False)
-        )
+        for i in range(1, 4):
+            self.add_module(f"block{i}", nn.Sequential(
+                nn.MaxPool2d(kernel_size=5, stride=1, padding=2),
+                nn.Conv2d(feats, feats, kernel_size=3, stride=1, padding=1, bias=False)
+            ))
 
     def forward(self, x):
         x = self.relu(x)
+        path = x
 
-        out = self.block1(x)
-        x += out
-        out = self.block2(out)
-        x += out
-        out = self.block3(out)
-        x += out
+        for i in range(1, 4):
+            path = self.__getattr__(f"block{i}")(path)
+            x += path
 
         return x
 
 
-class RefineNetBlock(nn.Module):
+class ChainedResidualPoolImproved(nn.Module):
 
-    def __init__(self, features, *shapes):
+    def __init__(self, feats):
+        super().__init__()
+
+        self.relu = nn.ReLU(inplace=True)
+        for i in range(1, 5):
+            self.add_module(f"block{i}", nn.Sequential(
+                nn.Conv2d(feats, feats, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.MaxPool2d(kernel_size=5, stride=1, padding=2)
+            ))
+
+    def forward(self, x):
+        x = self.relu(x)
+        path = x
+
+        for i in range(1, 5):
+            path = self.__getattr__(f"block{i}")(path)
+            x += path
+
+        return x
+
+
+class BaseRefineNetBlock(nn.Module):
+
+    def __init__(self, features,
+                 residual_conv_unit,
+                 multi_resolution_fusion,
+                 chained_residual_pool, *shapes):
         super().__init__()
 
         for i, shape in enumerate(shapes):
             feats = shape[0]
             self.add_module(f"rcu{i}", nn.Sequential(
-                ResidualConvUnit(feats),
-                ResidualConvUnit(feats)
+                residual_conv_unit(feats),
+                residual_conv_unit(feats)
             ))
 
         if len(shapes) != 1:
-            self.mrf = MultiResolutionFusion(features, *shapes)
+            self.mrf = multi_resolution_fusion(features, *shapes)
         else:
             self.mrf = None
 
-        self.crp = ChainedResidualPool(features)
-        self.output_conv = ResidualConvUnit(features)
+        self.crp = chained_residual_pool(features)
+        self.output_conv = residual_conv_unit(features)
 
     def forward(self, *xs):
         for i, x in enumerate(xs):
@@ -121,3 +138,19 @@ class RefineNetBlock(nn.Module):
 
         out = self.crp(out)
         return self.output_conv(out)
+
+
+class RefineNetBlock(BaseRefineNetBlock):
+
+    def __init__(self, features, *shapes):
+        super().__init__(features, ResidualConvUnit,
+                         MultiResolutionFusion,
+                         ChainedResidualPool, *shapes)
+
+
+class RefineNetBlockImprovedPooling(nn.Module):
+
+    def __init__(self, features, *shapes):
+        super().__init__(features, ResidualConvUnit,
+                         MultiResolutionFusion,
+                         ChainedResidualPoolImproved, *shapes)
