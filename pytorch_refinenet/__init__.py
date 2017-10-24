@@ -1,1 +1,1 @@
-from .refinenet import RefineNet
+from .refinenet import RefineNet4Cascade

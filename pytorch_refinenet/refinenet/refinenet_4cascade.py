@@ -1,13 +1,13 @@
 import torch.nn as nn
 import torchvision.models as models
 
-from .blocks import (
+from ..blocks import (
     RefineNetBlock,
     ResidualConvUnit
 )
 
 
-class RefineNet(nn.Module):
+class RefineNet4Cascade(nn.Module):
 
     def __init__(self, input_shape,
                  num_classes=1,

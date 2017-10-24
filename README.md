@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/thomasjpfan/pytorch_refinenet.svg?branch=master)](https://travis-ci.org/thomasjpfan/pytorch_refinenet)
 
-This is a Pytorch implementation of the Multipath RefineNet architecture from the paper: []().
+This is a Pytorch implementation of the Multipath RefineNet architecture from the [paper](https://arxiv.org/abs/1611.06612).
 
 ## Installation
 
@@ -17,7 +17,7 @@ pip install git+https://github.com/thomasjpfan/pytorch_refinenet.git
 This implementation of the Multipath RefineNet has the following initialization:
 
 ```python
-class RefineNet(nn.Module):
+class RefineNet4Cascaded(nn.Module):
 
     def __init__(self,
                  input_shape,
@@ -30,13 +30,13 @@ class RefineNet(nn.Module):
 ```
 The `input_shape` is a tuple of`(channels, size)` which denotes the number of channels in the
 input image and the input width/height. For an input to flow cleanly through the resnet layers, the input size should be divisible by 32. The input size is assumed to be a square image/patch. For
-example the `RefineNet` can be defined to intake 3x224x224 images:
+example the `RefineNet4Cascaded` can be defined to intake 3x224x224 images:
 
 ```python
 import torch
 from torch.autograd import Variable
 
-net = RefineNet((3, 224), num_classes=10)
+net = RefineNet4Cascaded((3, 224), num_classes=10)
 x_var = Variable(torch.randn(1, 3, 224, 224))
 y = net(x_var)
 y.size()
