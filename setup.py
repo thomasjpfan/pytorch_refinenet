@@ -8,7 +8,7 @@ requirements = [
 
 setup(
     name='pytorch_refinenet',
-    version='0.2.1',
+    version='0.2.2',
     author='Thomas Fan',
     author_email='thomasjpfan@gmail.com',
     url='https://github.com/thomasjpfan/pytorch_refinenet',

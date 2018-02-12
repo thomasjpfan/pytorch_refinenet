@@ -128,13 +128,15 @@ class BaseRefineNetBlock(nn.Module):
         self.output_conv = residual_conv_unit(features)
 
     def forward(self, *xs):
+        rcu_xs = []
+
         for i, x in enumerate(xs):
-            x = self.__getattr__(f"rcu{i}")(x)
+            rcu_xs.append(self.__getattr__(f"rcu{i}")(x))
 
         if self.mrf is not None:
-            out = self.mrf(*xs)
+            out = self.mrf(*rcu_xs)
         else:
-            out = xs[0]
+            out = rcu_xs[0]
 
         out = self.crp(out)
         return self.output_conv(out)
