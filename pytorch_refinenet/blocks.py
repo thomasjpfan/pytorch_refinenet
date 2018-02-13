@@ -15,7 +15,7 @@ class ResidualConvUnit(nn.Module):
     def forward(self, x):
 
         out = self.relu(x)
-        out = self.conv1(out)
+        out = self.conv1(x)
         out = self.relu(out)
         out = self.conv2(out)
 
@@ -76,7 +76,7 @@ class ChainedResidualPool(nn.Module):
 
         for i in range(1, 4):
             path = self.__getattr__(f"block{i}")(path)
-            x += path
+            x = x + path
 
         return x
 
