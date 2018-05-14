@@ -39,7 +39,7 @@ class MultiResolutionFusion(nn.Module):
                 self.add_module(f"resolve{i}", nn.Sequential(
                     nn.Conv2d(feat, out_feats, kernel_size=3,
                               stride=1, padding=1, bias=False),
-                    nn.Upsample(scale_factor=scale_factor, mode='bilinear')
+                    nn.Upsample(scale_factor=scale_factor, mode='bilinear', align_corners=True)
                 ))
             else:
                 self.add_module(

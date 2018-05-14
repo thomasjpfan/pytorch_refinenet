@@ -105,6 +105,10 @@ class BaseRefineNet4Cascade(nn.Module):
         out = self.output_conv(path_1)
         return out
 
+    def named_parameters(self):
+        """Returns parameters that requires a gradident to update."""
+        return (p for p in super().named_parameters() if p[1].requires_grad)
+
 
 class RefineNet4CascadePoolingImproved(BaseRefineNet4Cascade):
 

@@ -8,7 +8,7 @@ This is a Pytorch implementation of the Multipath RefineNet architecture from th
 
 Install PyTorch following instructions on their [website](http://pytorch.org). Then install this package:
 
-```
+```bash
 pip install git+https://github.com/thomasjpfan/pytorch_refinenet.git
 ```
 
@@ -41,14 +41,27 @@ example the `RefineNet4Cascade` can be defined to intake 3x224x224 images:
 
 ```python
 import torch
-from torch.autograd import Variable
 
 net = RefineNet4Cascade((3, 224), num_classes=10)
-x_var = Variable(torch.randn(1, 3, 224, 224))
-y = net(x_var)
+x = torch.randn(1, 3, 224, 224)
+y = net(x)
 y.size()
 # torch.Size([1, 10, 56, 56])
 ```
 
 The number of channels outputed will equal `num_classes` and the size will be 1/4 the size of the
 input as described in the paper. You can upscale the to get back to the original resolution.
+
+### Training
+
+The refinenet backbone is frozen by default, which means they will not be updated with gradients during training.
+The `parameters` method in `RefineNet4Cascade` was redefined to only return the parameters that require a gradident. Thus this will work for training:
+
+```python
+net = RefineNet4Cascade((3, 224), num_classes=10)
+opt = optim.Adam(net.parameters())
+
+x = torch.randn(1, 3, 224, 224)
+y = net(x)
+...
+```
