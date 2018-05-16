@@ -35,12 +35,14 @@ class RefineNet4Cascade(nn.Module):
                  freeze_resnet=True):
         ...
 ```
+
 The `input_shape` is a tuple of`(channels, size)` which denotes the number of channels in the
 input image and the input width/height. For an input to flow cleanly through the resnet layers, the input size should be divisible by 32. The input size is assumed to be a square image/patch. For
 example the `RefineNet4Cascade` can be defined to intake 3x224x224 images:
 
 ```python
 import torch
+from pytorch_refinenet import RefineNet4Cascade
 
 net = RefineNet4Cascade((3, 224), num_classes=10)
 x = torch.randn(1, 3, 224, 224)
