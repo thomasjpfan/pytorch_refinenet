@@ -15,7 +15,7 @@ class ResidualConvUnit(nn.Module):
     def forward(self, x):
 
         out = self.relu(x)
-        out = self.conv1(x)
+        out = self.conv1(out)
         out = self.relu(out)
         out = self.conv2(out)
 
