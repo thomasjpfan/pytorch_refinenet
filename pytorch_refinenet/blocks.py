@@ -2,7 +2,6 @@ import torch.nn as nn
 
 
 class ResidualConvUnit(nn.Module):
-
     def __init__(self, features):
         super().__init__()
 
@@ -23,52 +22,67 @@ class ResidualConvUnit(nn.Module):
 
 
 class MultiResolutionFusion(nn.Module):
-
     def __init__(self, out_feats, *shapes):
         super().__init__()
 
         _, max_size = max(shapes, key=lambda x: x[1])
 
+        self.scale_factors = []
         for i, shape in enumerate(shapes):
             feat, size = shape
             if max_size % size != 0:
                 raise ValueError(f"max_size not divisble by shape {i}")
 
-            scale_factor = max_size // size
-            if scale_factor != 1:
-                self.add_module(f"resolve{i}", nn.Sequential(
-                    nn.Conv2d(feat, out_feats, kernel_size=3,
-                              stride=1, padding=1, bias=False),
-                    nn.Upsample(scale_factor=scale_factor, mode='bilinear', align_corners=True)
-                ))
-            else:
-                self.add_module(
-                    f"resolve{i}",
-                    nn.Conv2d(feat, out_feats, kernel_size=3,
-                              stride=1, padding=1, bias=False)
-                )
+            self.scale_factors.append(max_size // size)
+            self.add_module(
+                f"resolve{i}",
+                nn.Conv2d(
+                    feat,
+                    out_feats,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False))
 
     def forward(self, *xs):
 
         output = self.resolve0(xs[0])
+        if self.scale_factors[0] != 1:
+            output = nn.functional.interpolate(
+                output,
+                scale_factor=self.scale_factors[0],
+                mode='bilinear',
+                align_corners=True)
 
         for i, x in enumerate(xs[1:], 1):
             output += self.__getattr__(f"resolve{i}")(x)
+            if self.scale_factors[i] != 1:
+                output = nn.functional.interpolate(
+                    output,
+                    scale_factor=self.scale_factors[i],
+                    mode='bilinear',
+                    align_corners=True)
 
         return output
 
 
 class ChainedResidualPool(nn.Module):
-
     def __init__(self, feats):
         super().__init__()
 
         self.relu = nn.ReLU(inplace=True)
         for i in range(1, 4):
-            self.add_module(f"block{i}", nn.Sequential(
-                nn.MaxPool2d(kernel_size=5, stride=1, padding=2),
-                nn.Conv2d(feats, feats, kernel_size=3, stride=1, padding=1, bias=False)
-            ))
+            self.add_module(
+                f"block{i}",
+                nn.Sequential(
+                    nn.MaxPool2d(kernel_size=5, stride=1, padding=2),
+                    nn.Conv2d(
+                        feats,
+                        feats,
+                        kernel_size=3,
+                        stride=1,
+                        padding=1,
+                        bias=False)))
 
     def forward(self, x):
         x = self.relu(x)
@@ -82,16 +96,22 @@ class ChainedResidualPool(nn.Module):
 
 
 class ChainedResidualPoolImproved(nn.Module):
-
     def __init__(self, feats):
         super().__init__()
 
         self.relu = nn.ReLU(inplace=True)
         for i in range(1, 5):
-            self.add_module(f"block{i}", nn.Sequential(
-                nn.Conv2d(feats, feats, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.MaxPool2d(kernel_size=5, stride=1, padding=2)
-            ))
+            self.add_module(
+                f"block{i}",
+                nn.Sequential(
+                    nn.Conv2d(
+                        feats,
+                        feats,
+                        kernel_size=3,
+                        stride=1,
+                        padding=1,
+                        bias=False),
+                    nn.MaxPool2d(kernel_size=5, stride=1, padding=2)))
 
     def forward(self, x):
         x = self.relu(x)
@@ -105,19 +125,16 @@ class ChainedResidualPoolImproved(nn.Module):
 
 
 class BaseRefineNetBlock(nn.Module):
-
-    def __init__(self, features,
-                 residual_conv_unit,
-                 multi_resolution_fusion,
+    def __init__(self, features, residual_conv_unit, multi_resolution_fusion,
                  chained_residual_pool, *shapes):
         super().__init__()
 
         for i, shape in enumerate(shapes):
             feats = shape[0]
-            self.add_module(f"rcu{i}", nn.Sequential(
-                residual_conv_unit(feats),
-                residual_conv_unit(feats)
-            ))
+            self.add_module(
+                f"rcu{i}",
+                nn.Sequential(
+                    residual_conv_unit(feats), residual_conv_unit(feats)))
 
         if len(shapes) != 1:
             self.mrf = multi_resolution_fusion(features, *shapes)
@@ -143,16 +160,12 @@ class BaseRefineNetBlock(nn.Module):
 
 
 class RefineNetBlock(BaseRefineNetBlock):
-
     def __init__(self, features, *shapes):
-        super().__init__(features, ResidualConvUnit,
-                         MultiResolutionFusion,
+        super().__init__(features, ResidualConvUnit, MultiResolutionFusion,
                          ChainedResidualPool, *shapes)
 
 
 class RefineNetBlockImprovedPooling(nn.Module):
-
     def __init__(self, features, *shapes):
-        super().__init__(features, ResidualConvUnit,
-                         MultiResolutionFusion,
+        super().__init__(features, ResidualConvUnit, MultiResolutionFusion,
                          ChainedResidualPoolImproved, *shapes)
