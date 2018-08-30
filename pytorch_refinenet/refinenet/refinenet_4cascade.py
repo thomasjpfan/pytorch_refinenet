@@ -1,16 +1,13 @@
 import torch.nn as nn
 import torchvision.models as models
 
-from ..blocks import (
-    RefineNetBlock,
-    ResidualConvUnit,
-    RefineNetBlockImprovedPooling
-)
+from ..blocks import (RefineNetBlock, ResidualConvUnit,
+                      RefineNetBlockImprovedPooling)
 
 
 class BaseRefineNet4Cascade(nn.Module):
-
-    def __init__(self, input_shape,
+    def __init__(self,
+                 input_shape,
                  refinenet_block,
                  num_classes=1,
                  features=256,
@@ -40,17 +37,12 @@ class BaseRefineNet4Cascade(nn.Module):
         input_channel, input_size = input_shape
 
         if input_size % 32 != 0:
-            raise ValueError(f"{input_shape} not divisble by 32")
+            raise ValueError("{} not divisble by 32".format(input_shape))
 
         resnet = resnet_factory(pretrained=pretrained)
 
-        self.layer1 = nn.Sequential(
-            resnet.conv1,
-            resnet.bn1,
-            resnet.relu,
-            resnet.maxpool,
-            resnet.layer1
-        )
+        self.layer1 = nn.Sequential(resnet.conv1, resnet.bn1, resnet.relu,
+                                    resnet.maxpool, resnet.layer1)
 
         self.layer2 = resnet.layer2
         self.layer3 = resnet.layer3
@@ -71,20 +63,26 @@ class BaseRefineNet4Cascade(nn.Module):
         self.layer4_rn = nn.Conv2d(
             2048, 2 * features, kernel_size=3, stride=1, padding=1, bias=False)
 
-        self.refinenet4 = RefineNetBlock(
-            2 * features, (2 * features, input_size // 32))
-        self.refinenet3 = RefineNetBlock(
-            features, (2 * features, input_size // 32), (features, input_size // 16))
-        self.refinenet2 = RefineNetBlock(
-            features, (features, input_size // 16), (features, input_size // 8))
-        self.refinenet1 = RefineNetBlock(
-            features, (features, input_size // 8), (features, input_size // 4))
+        self.refinenet4 = RefineNetBlock(2 * features,
+                                         (2 * features, input_size // 32))
+        self.refinenet3 = RefineNetBlock(features,
+                                         (2 * features, input_size // 32),
+                                         (features, input_size // 16))
+        self.refinenet2 = RefineNetBlock(features,
+                                         (features, input_size // 16),
+                                         (features, input_size // 8))
+        self.refinenet1 = RefineNetBlock(features, (features, input_size // 8),
+                                         (features, input_size // 4))
 
         self.output_conv = nn.Sequential(
-            ResidualConvUnit(features),
-            ResidualConvUnit(features),
-            nn.Conv2d(features, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
-        )
+            ResidualConvUnit(features), ResidualConvUnit(features),
+            nn.Conv2d(
+                features,
+                num_classes,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=True))
 
     def forward(self, x):
 
@@ -111,8 +109,8 @@ class BaseRefineNet4Cascade(nn.Module):
 
 
 class RefineNet4CascadePoolingImproved(BaseRefineNet4Cascade):
-
-    def __init__(self, input_shape,
+    def __init__(self,
+                 input_shape,
                  num_classes=1,
                  features=256,
                  resnet_factory=models.resnet101,
@@ -136,15 +134,19 @@ class RefineNet4CascadePoolingImproved(BaseRefineNet4Cascade):
         Raises:
             ValueError: size of input_shape not divisible by 32
         """
-        super().__init__(input_shape, RefineNetBlockImprovedPooling,
-                         num_classes=num_classes, features=features,
-                         resnet_factory=resnet_factory, pretrained=pretrained,
-                         freeze_resnet=freeze_resnet)
+        super().__init__(
+            input_shape,
+            RefineNetBlockImprovedPooling,
+            num_classes=num_classes,
+            features=features,
+            resnet_factory=resnet_factory,
+            pretrained=pretrained,
+            freeze_resnet=freeze_resnet)
 
 
 class RefineNet4Cascade(BaseRefineNet4Cascade):
-
-    def __init__(self, input_shape,
+    def __init__(self,
+                 input_shape,
                  num_classes=1,
                  features=256,
                  resnet_factory=models.resnet101,
@@ -168,7 +170,11 @@ class RefineNet4Cascade(BaseRefineNet4Cascade):
         Raises:
             ValueError: size of input_shape not divisible by 32
         """
-        super().__init__(input_shape, RefineNetBlock,
-                         num_classes=num_classes, features=features,
-                         resnet_factory=resnet_factory, pretrained=pretrained,
-                         freeze_resnet=freeze_resnet)
+        super().__init__(
+            input_shape,
+            RefineNetBlock,
+            num_classes=num_classes,
+            features=features,
+            resnet_factory=resnet_factory,
+            pretrained=pretrained,
+            freeze_resnet=freeze_resnet)

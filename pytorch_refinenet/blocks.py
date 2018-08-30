@@ -31,11 +31,11 @@ class MultiResolutionFusion(nn.Module):
         for i, shape in enumerate(shapes):
             feat, size = shape
             if max_size % size != 0:
-                raise ValueError(f"max_size not divisble by shape {i}")
+                raise ValueError("max_size not divisble by shape {}".format(i))
 
             self.scale_factors.append(max_size // size)
             self.add_module(
-                f"resolve{i}",
+                "resolve{}".format(i),
                 nn.Conv2d(
                     feat,
                     out_feats,
@@ -55,7 +55,7 @@ class MultiResolutionFusion(nn.Module):
                 align_corners=True)
 
         for i, x in enumerate(xs[1:], 1):
-            output += self.__getattr__(f"resolve{i}")(x)
+            output += self.__getattr__("resolve{}".format(i))(x)
             if self.scale_factors[i] != 1:
                 output = nn.functional.interpolate(
                     output,
@@ -73,7 +73,7 @@ class ChainedResidualPool(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         for i in range(1, 4):
             self.add_module(
-                f"block{i}",
+                "block{}".format(i),
                 nn.Sequential(
                     nn.MaxPool2d(kernel_size=5, stride=1, padding=2),
                     nn.Conv2d(
@@ -89,7 +89,7 @@ class ChainedResidualPool(nn.Module):
         path = x
 
         for i in range(1, 4):
-            path = self.__getattr__(f"block{i}")(path)
+            path = self.__getattr__("block{}".format(i))(path)
             x = x + path
 
         return x
@@ -102,7 +102,7 @@ class ChainedResidualPoolImproved(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         for i in range(1, 5):
             self.add_module(
-                f"block{i}",
+                "block{}".format(i),
                 nn.Sequential(
                     nn.Conv2d(
                         feats,
@@ -118,7 +118,7 @@ class ChainedResidualPoolImproved(nn.Module):
         path = x
 
         for i in range(1, 5):
-            path = self.__getattr__(f"block{i}")(path)
+            path = self.__getattr__("block{}".format(i))(path)
             x += path
 
         return x
@@ -132,7 +132,7 @@ class BaseRefineNetBlock(nn.Module):
         for i, shape in enumerate(shapes):
             feats = shape[0]
             self.add_module(
-                f"rcu{i}",
+                "rcu{}".format(i),
                 nn.Sequential(
                     residual_conv_unit(feats), residual_conv_unit(feats)))
 
@@ -148,7 +148,7 @@ class BaseRefineNetBlock(nn.Module):
         rcu_xs = []
 
         for i, x in enumerate(xs):
-            rcu_xs.append(self.__getattr__(f"rcu{i}")(x))
+            rcu_xs.append(self.__getattr__("rcu{}".format(i))(x))
 
         if self.mrf is not None:
             out = self.mrf(*rcu_xs)
