@@ -1,9 +1,9 @@
 language: python
 python:
-  - "3.6"
+  - "3.7"
 cache: pip
 install:
-  - pip install https://download.pytorch.org/whl/cpu/torch-1.0.0-cp36-cp36m-linux_x86_64.whl
+  - pip install https://download.pytorch.org/whl/cpu/torch-1.0.0-cp37-cp37m-linux_x86_64.whl
   - pip install torchvision pytest pytest-cov coveralls
   - pip install -e .
 script:
