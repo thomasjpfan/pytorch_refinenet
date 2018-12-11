@@ -20,7 +20,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda info -a
 
-  - conda env create -q -n pytorch-dev
+  - conda create -q -n pytorch-dev
   - source activate pytorch-dev
   - conda install pytest pytest-cov coveralls
   - conda install pytorch-cpu torchvision-cpu -c pytorch
