@@ -38,4 +38,5 @@ def test_refinenet_output_valid_shapes(model):
                          [RefineNet4Cascade, RefineNet4CascadePoolingImproved])
 def test_refinenet_optimize_no_error_with_paramaters(model):
     net = model(input_shape=(3, 32), num_classes=2, pretrained=False)
-    optim.Adam((net.parameters()))
+    params = (p for p in net.parameters() if p.requires_grad)
+    optim.Adam(params)
